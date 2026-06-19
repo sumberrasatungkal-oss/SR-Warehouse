@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isAdmin() { return isSignedIn() && userRole() == 'admin'; }
+    function isSupervisor() { return isSignedIn() && userRole() == 'supervisor'; }
+    function isStaff() { return isSignedIn() && userRole() == 'staff'; }
+    function canEditItems() { return isAdmin() || isSupervisor(); }
+    function canTransact() { return isAdmin() || isSupervisor() || isStaff(); }
+
+    // Profil & role tiap user. Hanya admin yang boleh menulis,
+    // tiap user hanya boleh membaca profilnya sendiri (admin boleh baca semua).
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Master data barang. Semua user login boleh baca.
+    // Tambah/edit: Admin & Supervisor. Hapus: Admin saja.
+    match /items/{itemId} {
+      allow read: if isSignedIn();
+      allow create, update: if canEditItems();
+      allow delete: if isAdmin();
+    }
+
+    // Riwayat transaksi (masuk/keluar/opname) bersifat permanen (ledger),
+    // tidak boleh diubah atau dihapus demi menjaga keaslian riwayat.
+    match /transactions/{txId} {
+      allow read: if isSignedIn();
+      allow create: if canTransact();
+      allow update, delete: if false;
+    }
+
+    // Log aktivitas user, juga permanen. Hanya Admin yang boleh membaca
+    // (akan dipakai di modul "Log Aktivitas User" pada fase berikutnya).
+    match /activityLogs/{logId} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+  }
+}

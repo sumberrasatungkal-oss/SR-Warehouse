@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Sumber Rasa — Stok Gudang</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" class="screen login-screen">
+    <div class="login-card">
+      <div class="login-brand">
+        <span class="brand-mark">SR</span>
+        <h1>Sumber Rasa</h1>
+        <p>Sistem Stok Gudang</p>
+      </div>
+      <form id="login-form" autocomplete="off">
+        <label class="field">
+          <span>Email / ID Pengguna</span>
+          <input type="email" id="login-email" required placeholder="contoh: staff1@sumberrasa.local">
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" id="login-password" required placeholder="••••••••">
+        </label>
+        <button type="submit" id="login-submit" class="btn btn-primary btn-block">Masuk</button>
+        <p id="login-error" class="form-error" hidden></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- APP SHELL -->
+  <div id="app-shell" class="app-shell" hidden>
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span class="brand-mark">SR</span><span class="brand-text">Stok Gudang</span></div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-user">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-info">
+          <strong id="user-name">—</strong>
+          <span id="user-role" class="role-badge">—</span>
+        </div>
+        <button id="logout-btn" class="btn-icon" title="Keluar" aria-label="Keluar">⏻</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button id="mobile-menu-btn" class="btn-icon mobile-only" aria-label="Menu">☰</button>
+        <h2 id="screen-title">Dashboard</h2>
+        <div class="topbar-clock" id="topbar-clock"></div>
+      </header>
+
+      <section id="screen-dashboard" class="screen-panel"></section>
+      <section id="screen-master-data" class="screen-panel" hidden></section>
+      <section id="screen-transaksi" class="screen-panel" hidden></section>
+    </main>
+
+    <nav class="bottom-nav" id="bottom-nav"></nav>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
