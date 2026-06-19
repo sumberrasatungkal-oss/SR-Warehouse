@@ -20,13 +20,20 @@ export function can(action){
   if (!currentUser) return false;
   const role = currentUser.role;
   const matrix = {
-    'items.create': ['admin','supervisor'],
+    'items.create': ['admin','supervisor','staff'],
     'items.edit':   ['admin','supervisor'],
     'items.delete': ['admin'],
     'transaction.create': ['admin','supervisor','staff'],
-    'manage.users': ['admin']
+    'transaction.request_correction': ['admin','supervisor','staff'],
+    'transaction.approve_correction': ['admin'],
+    'manage.users': ['admin'],
+    'reports.view': ['admin','supervisor','staff','viewer']
   };
   return (matrix[action] || []).includes(role);
+}
+
+export function getThemeClass(role){
+  return (role === 'admin' || role === 'supervisor') ? 'theme-admin' : 'theme-staff';
 }
 
 export function login(email, password){

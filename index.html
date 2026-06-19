@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -26,7 +27,10 @@
         </label>
         <label class="field">
           <span>Password</span>
-          <input type="password" id="login-password" required placeholder="••••••••">
+          <div class="input-with-toggle">
+            <input type="password" id="login-password" required placeholder="••••••••">
+            <button type="button" class="toggle-visibility" id="login-password-toggle" aria-label="Tampilkan password">👁</button>
+          </div>
         </label>
         <button type="submit" id="login-submit" class="btn btn-primary btn-block">Masuk</button>
         <p id="login-error" class="form-error" hidden></p>
@@ -36,8 +40,12 @@
 
   <!-- APP SHELL -->
   <div id="app-shell" class="app-shell" hidden>
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
     <aside class="sidebar">
-      <div class="sidebar-brand"><span class="brand-mark">SR</span><span class="brand-text">Stok Gudang</span></div>
+      <div class="sidebar-brand">
+        <span class="brand-mark">SR</span><span class="brand-text">Stok Gudang</span>
+        <button class="btn-icon sidebar-close-mobile" id="sidebar-close-btn" aria-label="Tutup menu">✕</button>
+      </div>
       <nav id="sidebar-nav" class="sidebar-nav"></nav>
       <div class="sidebar-user">
         <div class="user-avatar" id="user-avatar">?</div>
@@ -59,6 +67,9 @@
       <section id="screen-dashboard" class="screen-panel"></section>
       <section id="screen-master-data" class="screen-panel" hidden></section>
       <section id="screen-transaksi" class="screen-panel" hidden></section>
+      <section id="screen-laporan" class="screen-panel" hidden></section>
+      <section id="screen-persetujuan" class="screen-panel" hidden></section>
+      <section id="screen-kelola-user" class="screen-panel" hidden></section>
     </main>
 
     <nav class="bottom-nav" id="bottom-nav"></nav>

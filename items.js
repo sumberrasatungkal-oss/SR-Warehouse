@@ -3,7 +3,7 @@ import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc,
   serverTimestamp, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getInitialLetter, normalize, logActivity, showToast, escapeHtml } from "./utils.js";
+import { getInitialLetter, normalize, logActivity, showToast, escapeHtml, applyTitleCaseOnBlur } from "./utils.js";
 import { can, currentUser } from "./auth.js";
 
 export let itemsCache = [];
@@ -11,6 +11,7 @@ export let categoriesCache = [];
 
 const ALPHABET = '#ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const UNIT_OPTIONS = ['dus','ikt','bal','pcs','lsn','crt'];
+const CATEGORY_OPTIONS = ['Kembang Api','Mie Instant','Minuman Bubuk','Minuman Kemasan','Obat Nyamuk','Pampers','Permen','Snack'];
 
 let unsubscribeItems = null;
 let externalChangeListeners = [];
@@ -228,6 +229,34 @@ function unitFieldHtml(selectedUnit, prefix){
   `;
 }
 
+function categoryFieldHtml(selectedCategory, prefix, disabled){
+  const isCustom = selectedCategory && !CATEGORY_OPTIONS.includes(selectedCategory);
+  return `
+    <div class="unit-row">
+      <select id="${prefix}-category" ${disabled?'disabled':''}>
+        <option value="">Pilih kategori...</option>
+        ${CATEGORY_OPTIONS.map(c => `<option value="${c}" ${selectedCategory===c?'selected':''}>${c}</option>`).join('')}
+        <option value="custom" ${isCustom?'selected':''}>custom...</option>
+      </select>
+      <input type="text" id="${prefix}-category-custom" placeholder="kategori lain" value="${isCustom?escapeHtml(selectedCategory):''}" style="${isCustom?'':'display:none'}" ${disabled?'disabled':''}>
+    </div>
+  `;
+}
+
+function wireCategoryField(modal, prefix){
+  const select = modal.querySelector(`#${prefix}-category`);
+  const custom = modal.querySelector(`#${prefix}-category-custom`);
+  select.addEventListener('change', () => {
+    custom.style.display = select.value === 'custom' ? 'block' : 'none';
+  });
+}
+
+function readCategoryField(modal, prefix){
+  const select = modal.querySelector(`#${prefix}-category`);
+  const custom = modal.querySelector(`#${prefix}-category-custom`);
+  return select.value === 'custom' ? custom.value.trim() : select.value;
+}
+
 function wireUnitField(modal, prefix){
   const select = modal.querySelector(`#${prefix}-unit`);
   const custom = modal.querySelector(`#${prefix}-unit-custom`);
@@ -263,8 +292,7 @@ function openItemModal(item){
             </label>
             <label class="field">
               <span>Kategori</span>
-              <input type="text" id="im-category" list="im-category-list" value="${isEdit ? escapeHtml(item.category||'') : ''}" ${canEdit?'':'disabled'}>
-              <datalist id="im-category-list">${categoriesCache.map(c=>`<option value="${escapeHtml(c)}">`).join('')}</datalist>
+              ${categoryFieldHtml(isEdit ? (item.category||'') : '', 'im', !canEdit)}
             </label>
             <label class="field">
               <span>Satuan</span>
@@ -298,6 +326,8 @@ function openItemModal(item){
   root.querySelector('#item-modal-cancel').addEventListener('click', close);
 
   wireUnitField(root, 'im');
+  wireCategoryField(root, 'im');
+  applyTitleCaseOnBlur(root.querySelector('#im-name'));
 
   if (!isEdit){
     const nameInput = root.querySelector('#im-name');
@@ -331,7 +361,7 @@ function openItemModal(item){
       const errorEl = root.querySelector('#item-modal-error');
       errorEl.hidden = true;
       const name = root.querySelector('#im-name').value.trim();
-      const category = root.querySelector('#im-category').value.trim();
+      const category = readCategoryField(root, 'im');
       const unit = readUnitField(root, 'im');
       const minStock = root.querySelector('#im-min-stock').value;
 

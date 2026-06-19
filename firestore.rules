@@ -22,27 +22,44 @@ service cloud.firestore {
     }
 
     // Master data barang. Semua user login boleh baca.
-    // Tambah/edit: Admin & Supervisor. Hapus: Admin saja.
+    // Tambah: Admin, Supervisor, & Staff. Edit: Admin & Supervisor. Hapus: Admin saja.
     match /items/{itemId} {
       allow read: if isSignedIn();
-      allow create, update: if canEditItems();
+      allow create: if canEditItems() || isStaff();
+      allow update: if canEditItems();
       allow delete: if isAdmin();
     }
 
-    // Riwayat transaksi (masuk/keluar/opname) bersifat permanen (ledger),
-    // tidak boleh diubah atau dihapus demi menjaga keaslian riwayat.
+    // Riwayat transaksi (masuk/keluar/opname). Tidak pernah benar-benar dihapus.
+    // Update hanya boleh oleh Admin, dipakai khusus saat menyetujui
+    // permintaan revisi/pembatalan (lihat correctionRequests di bawah).
     match /transactions/{txId} {
       allow read: if isSignedIn();
       allow create: if canTransact();
-      allow update, delete: if false;
+      allow update: if isAdmin();
+      allow delete: if false;
     }
 
-    // Log aktivitas user, juga permanen. Hanya Admin yang boleh membaca
-    // (akan dipakai di modul "Log Aktivitas User" pada fase berikutnya).
+    // Permintaan revisi/pembatalan transaksi oleh staff/supervisor,
+    // disetujui/ditolak oleh admin.
+    match /correctionRequests/{reqId} {
+      allow read: if isSignedIn() && (isAdmin() || resource.data.requestedBy == request.auth.uid);
+      allow create: if canTransact() && request.resource.data.requestedBy == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // Log aktivitas user, permanen. Hanya Admin yang boleh membaca.
     match /activityLogs/{logId} {
       allow create: if isSignedIn();
       allow read: if isAdmin();
       allow update, delete: if false;
+    }
+
+    // Penanda kapan tiap user terakhir generate "laporan aktivitas pribadi".
+    // Tiap user hanya boleh baca/tulis miliknya sendiri.
+    match /userReportState/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
     }
   }
 }

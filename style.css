@@ -34,6 +34,7 @@
 }
 
 *{box-sizing:border-box;}
+[hidden]{display:none !important;}
 html,body{margin:0;padding:0;}
 body{
   font-family:var(--font-body);
@@ -279,6 +280,7 @@ input,select,textarea{font-family:inherit; font-size:14px;}
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(10px);
   background:var(--primary); color:#fff; padding:12px 20px; border-radius:var(--radius-sm);
   font-size:13px; font-weight:500; box-shadow:var(--shadow-pop); z-index:200; opacity:0;
+  pointer-events:none;
   transition:opacity .2s ease, transform .2s ease;
 }
 .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
@@ -309,3 +311,108 @@ input,select,textarea{font-family:inherit; font-size:14px;}
   .bottom-nav .nav-item.active{background:none; color:var(--accent);}
   .main-content{padding-bottom:56px;}
 }
+
+/* ============================================================
+   v2 additions
+   ============================================================ */
+
+/* Role theme: Staff/Viewer get a blue palette instead of teal/amber */
+body.theme-staff{
+  --primary:#1F3A5C;
+  --primary-light:#2D5685;
+  --accent:#2D7DD2;
+  --accent-light:#5B9FE0;
+}
+
+/* Password visibility toggle */
+.field .input-with-toggle{position:relative;}
+.field .input-with-toggle input{padding-right:40px;}
+.toggle-visibility{
+  position:absolute; right:4px; top:50%; transform:translateY(-50%);
+  background:none; border:none; cursor:pointer; font-size:16px; padding:6px;
+  color:var(--muted);
+}
+
+/* Expandable lists ("Lihat semua") */
+.expand-toggle{
+  display:flex; align-items:center; justify-content:center; gap:4px; width:100%;
+  background:none; border:none; padding:8px; margin-top:6px; font-size:12px;
+  color:var(--accent); font-weight:600; cursor:pointer;
+}
+.expand-toggle .chev{transition:transform .15s ease; display:inline-block;}
+.expand-toggle.open .chev{transform:rotate(180deg);}
+.hidden-extra{display:none;}
+.hidden-extra.show{display:block;}
+
+/* Low stock row with unit + min annotation */
+.low-stock-list li .qty-main{font-family:var(--font-mono); font-weight:600; color:var(--warning);}
+.low-stock-list li .qty-unit{font-size:11px; font-weight:500; color:var(--muted); margin-left:3px;}
+.low-stock-list li .qty-min{font-size:10px; color:var(--muted); display:block; text-align:right; margin-top:1px;}
+
+/* Sidebar backdrop + mobile close button */
+.sidebar-backdrop{
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:19;
+}
+.sidebar-backdrop.show{display:block;}
+.sidebar-close-mobile{display:none; color:#fff; font-size:18px;}
+@media (max-width:720px){
+  .sidebar-close-mobile{display:flex; margin-left:auto;}
+}
+
+/* Transaction row: name left, qty right */
+.tx-row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+.tx-row .tx-row-left{display:flex; align-items:flex-start; gap:8px; min-width:0;}
+.tx-row .tx-row-name{font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.tx-row .tx-row-qty{font-family:var(--font-mono); font-weight:700; font-size:14px; flex-shrink:0; text-align:right;}
+.tx-row .tx-row-qty.in{color:var(--success);}
+.tx-row .tx-row-qty.out{color:var(--danger);}
+.tx-row .tx-row-qty.adj{color:var(--accent);}
+.tx-row-actions{display:flex; gap:4px; flex-shrink:0;}
+.tx-row-actions button{
+  background:none; border:1px solid var(--border); border-radius:6px; font-size:11px;
+  padding:3px 7px; cursor:pointer; color:var(--muted);
+}
+.tx-row-actions button:hover{background:var(--surface-2); color:var(--ink);}
+.tx-status-pill{font-size:10px; padding:2px 7px; border-radius:20px; font-weight:600; text-transform:uppercase;}
+.tx-status-pill.pending{background:var(--warning-bg); color:var(--warning);}
+.tx-status-pill.approved{background:var(--success-bg); color:var(--success);}
+.tx-status-pill.rejected{background:var(--danger-bg); color:var(--danger);}
+.tx-status-pill.cancelled{background:var(--border); color:var(--muted);}
+
+/* Report builder */
+.report-types{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;}
+.report-type-card{
+  border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; cursor:pointer;
+  background:var(--surface); font-size:13px; font-weight:600; text-align:center;
+}
+.report-type-card.active{border-color:var(--accent); background:var(--warning-bg); color:var(--accent);}
+.period-presets{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;}
+.period-presets button{
+  border:1px solid var(--border); background:var(--surface); border-radius:20px; padding:6px 14px;
+  font-size:12px; cursor:pointer; color:var(--muted);
+}
+.period-presets button.active{background:var(--primary); color:#fff; border-color:var(--primary);}
+.date-range-row{display:flex; gap:10px;}
+.report-output{background:#fff; border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-top:18px;}
+.report-output h4{color:var(--primary); font-size:15px; margin-bottom:4px;}
+.report-output .report-meta{font-size:12px; color:var(--muted); margin-bottom:14px;}
+.report-table{width:100%; border-collapse:collapse; font-size:13px;}
+.report-table th{text-align:left; background:var(--surface-2); padding:8px 10px; font-size:11px; text-transform:uppercase; color:var(--muted);}
+.report-table td{padding:8px 10px; border-bottom:1px solid var(--border);}
+.report-table tfoot td{font-weight:700; border-top:2px solid var(--border); border-bottom:none;}
+
+/* User admin */
+.user-row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); gap:10px;}
+.user-row:last-child{border-bottom:none;}
+.user-row .u-info strong{display:block; font-size:14px;}
+.user-row .u-info span{font-size:12px; color:var(--muted);}
+.user-row .u-actions{display:flex; gap:6px; flex-wrap:wrap;}
+.role-pill{font-size:10px; font-weight:700; text-transform:uppercase; padding:2px 8px; border-radius:20px; background:var(--surface-2); color:var(--primary);}
+.role-pill.inactive{background:var(--danger-bg); color:var(--danger);}
+
+/* Correction request modal extras */
+.correction-card{border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; margin-bottom:10px; background:var(--surface);}
+.correction-card .cc-head{display:flex; justify-content:space-between; font-size:13px; font-weight:600;}
+.correction-card .cc-reason{font-size:12px; color:var(--muted); margin-top:4px;}
+.correction-card .cc-actions{display:flex; gap:8px; margin-top:10px;}
+

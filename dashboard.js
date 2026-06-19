@@ -1,6 +1,10 @@
 import { itemsCache, onItemsChange } from "./items.js";
 import { todayTransactions, onTodayTransactionsChange } from "./transactions.js";
 import { escapeHtml, formatTimeID } from "./utils.js";
+import { currentUser } from "./auth.js";
+import { generateMyActivityReport } from "./reports.js";
+
+const PREVIEW_COUNT = 5;
 
 export function computeDashboardStats(){
   const totalJenisBarang = itemsCache.length;
@@ -11,6 +15,10 @@ export function computeDashboardStats(){
     .filter(i => i.currentStock <= (i.minStock || 0))
     .sort((a,b) => a.currentStock - b.currentStock);
 
+  const aktivitasSource = currentUser.role === 'staff'
+    ? todayTransactions.filter(t => t.userId === currentUser.uid)
+    : todayTransactions;
+
   return {
     totalJenisBarang,
     totalStok,
@@ -19,7 +27,7 @@ export function computeDashboardStats(){
     keluarCount: keluar.length,
     keluarQty: keluar.reduce((s,t) => s + (t.qty||0), 0),
     stokMenipis,
-    aktivitasHariIni: todayTransactions.slice(0, 8)
+    aktivitas: aktivitasSource
   };
 }
 
@@ -51,28 +59,62 @@ export function mountDashboard(container){
       </div>
       <div class="panel-row">
         <div class="card">
-          <div class="card-header"><h3>Ringkasan Aktivitas Hari Ini</h3></div>
+          <div class="card-header">
+            <h3>${currentUser.role === 'staff' ? 'Aktivitas Saya Hari Ini' : 'Ringkasan Aktivitas Hari Ini'}</h3>
+            ${currentUser.role === 'staff' ? `<button class="btn btn-ghost btn-sm" id="db-gen-report">Generate Laporan Saya</button>` : ''}
+          </div>
           <div class="card-body">
-            <ul class="activity-list">
-              ${s.aktivitasHariIni.length ? s.aktivitasHariIni.map(activityRowHtml).join('') : `<li class="empty-state" style="padding:8px 0">Belum ada aktivitas hari ini.</li>`}
-            </ul>
+            ${expandableList(s.aktivitas, activityRowHtml, 'Belum ada aktivitas.', 'db-activity')}
           </div>
         </div>
         <div class="card">
           <div class="card-header"><h3>Stok Menipis</h3></div>
           <div class="card-body">
-            <ul class="low-stock-list">
-              ${s.stokMenipis.length ? s.stokMenipis.map(lowStockRowHtml).join('') : `<li style="background:none;justify-content:center;color:var(--muted)">Semua stok aman 👍</li>`}
-            </ul>
+            ${expandableList(s.stokMenipis, lowStockRowHtml, 'Semua stok aman 👍', 'db-lowstock', 'low-stock-list')}
           </div>
         </div>
       </div>
     `;
+
+    const genBtn = container.querySelector('#db-gen-report');
+    if (genBtn){
+      genBtn.addEventListener('click', async () => {
+        genBtn.disabled = true;
+        try{ await generateMyActivityReport(); } finally { genBtn.disabled = false; }
+      });
+    }
+    wireExpandButtons(container);
   }
 
   render();
   onItemsChange(render);
   onTodayTransactionsChange(render);
+}
+
+function expandableList(items, rowFn, emptyMsg, idPrefix, listClass = 'activity-list'){
+  if (!items.length){
+    return `<div class="empty-state" style="padding:8px 0">${emptyMsg}</div>`;
+  }
+  const visible = items.slice(0, PREVIEW_COUNT);
+  const rest = items.slice(PREVIEW_COUNT);
+  return `
+    <ul class="${listClass}">${visible.map(rowFn).join('')}</ul>
+    ${rest.length ? `
+      <ul class="${listClass} hidden-extra" id="${idPrefix}-extra">${rest.map(rowFn).join('')}</ul>
+      <button class="expand-toggle" data-expand="${idPrefix}"><span class="chev">▼</span> Lihat ${rest.length} lainnya</button>
+    ` : ''}
+  `;
+}
+
+function wireExpandButtons(container){
+  container.querySelectorAll('[data-expand]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const extra = container.querySelector(`#${btn.dataset.expand}-extra`);
+      const isOpen = extra.classList.toggle('show');
+      btn.classList.toggle('open', isOpen);
+      btn.innerHTML = isOpen ? `<span class="chev">▼</span> Sembunyikan` : `<span class="chev">▼</span> Lihat ${extra.children.length} lainnya`;
+    });
+  });
 }
 
 function activityRowHtml(t){
@@ -95,7 +137,10 @@ function lowStockRowHtml(item){
   return `
     <li>
       <span>${escapeHtml(item.name)}</span>
-      <span class="qty">${item.currentStock} / min ${item.minStock||0} ${escapeHtml(item.unit||'')}</span>
+      <span>
+        <span class="qty-main">${item.currentStock}</span><span class="qty-unit">${escapeHtml(item.unit||'')}</span>
+        <span class="qty-min">min ${item.minStock||0} ${escapeHtml(item.unit||'')}</span>
+      </span>
     </li>
   `;
 }

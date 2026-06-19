@@ -61,6 +61,7 @@ export async function logActivity(uid, userName, action, detail){
 export function showToast(message, type = 'default'){
   const el = document.getElementById('toast');
   if (!el) return;
+  el.removeAttribute('hidden');
   el.textContent = message;
   el.className = 'toast show' + (type !== 'default' ? ' ' + type : '');
   clearTimeout(el._hideTimer);
@@ -72,3 +73,36 @@ export function escapeHtml(str){
     .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
     .replaceAll('"','&quot;');
 }
+
+export function toTitleCase(str){
+  return (str || '')
+    .split(' ')
+    .map(word => word.length ? word.charAt(0).toUpperCase() + word.slice(1) : word)
+    .join(' ');
+}
+
+// Auto-capitalizes the first letter after every space, applied when the
+// user leaves the field (so it doesn't fight with the cursor while typing).
+export function applyTitleCaseOnBlur(input){
+  input.addEventListener('blur', () => {
+    input.value = toTitleCase(input.value);
+  });
+}
+
+export function startOfDate(date){
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+export function endOfDate(date){
+  const d = new Date(date);
+  d.setHours(23,59,59,999);
+  return d;
+}
+
+export function isoDateInput(date){
+  const d = date instanceof Date ? date : new Date(date);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+

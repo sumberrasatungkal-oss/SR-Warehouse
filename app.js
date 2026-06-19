@@ -1,7 +1,10 @@
-import { login, logout, watchAuthState, can, ROLES } from "./auth.js";
+import { login, logout, watchAuthState, can, ROLES, getThemeClass } from "./auth.js";
 import { startItemsListener, mountMasterData } from "./items.js";
 import { startTodayTransactionsListener, mountTransaksi } from "./transactions.js";
 import { mountDashboard } from "./dashboard.js";
+import { mountReports } from "./reports.js";
+import { mountApprovals } from "./corrections.js";
+import { mountUserAdmin } from "./users-admin.js";
 
 const loginScreen = document.getElementById('login-screen');
 const appShell = document.getElementById('app-shell');
@@ -17,16 +20,30 @@ const userRoleEl = document.getElementById('user-role');
 const userAvatarEl = document.getElementById('user-avatar');
 const logoutBtn = document.getElementById('logout-btn');
 const sidebar = document.querySelector('.sidebar');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
 const mobileMenuBtn = document.getElementById('mobile-menu-btn');
 const topbarClock = document.getElementById('topbar-clock');
 
 const MENU = [
   { key: 'dashboard', label: 'Dashboard', icon: '📊' },
   { key: 'master-data', label: 'Master Data Barang', icon: '📦' },
-  { key: 'transaksi', label: 'Transaksi Stok', icon: '🔄', requires: 'transaction.create' }
+  { key: 'transaksi', label: 'Transaksi Stok', icon: '🔄', requires: 'transaction.create' },
+  { key: 'laporan', label: 'Laporan', icon: '📑' },
+  { key: 'persetujuan', label: 'Persetujuan', icon: '✅', requires: 'transaction.approve_correction' },
+  { key: 'kelola-user', label: 'Kelola User', icon: '👥', requires: 'manage.users' }
 ];
 
 let dataListenersStarted = false;
+
+/* ---------- Password visibility toggle ---------- */
+const pwInput = document.getElementById('login-password');
+const pwToggle = document.getElementById('login-password-toggle');
+pwToggle.addEventListener('click', () => {
+  const show = pwInput.type === 'password';
+  pwInput.type = show ? 'text' : 'password';
+  pwToggle.textContent = show ? '🙈' : '👁';
+});
 
 /* ---------- Login form ---------- */
 loginForm.addEventListener('submit', async (e) => {
@@ -35,7 +52,7 @@ loginForm.addEventListener('submit', async (e) => {
   loginSubmit.disabled = true;
   loginSubmit.textContent = 'Memproses...';
   const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
+  const password = pwInput.value;
   try{
     await login(email, password);
   }catch(err){
@@ -61,13 +78,27 @@ function mapAuthError(code){
 
 logoutBtn.addEventListener('click', () => logout());
 
-mobileMenuBtn?.addEventListener('click', () => sidebar.classList.toggle('open'));
+/* ---------- Mobile sidebar open/close ---------- */
+function openSidebar(){
+  sidebar.classList.add('open');
+  sidebarBackdrop.classList.add('show');
+}
+function closeSidebar(){
+  sidebar.classList.remove('open');
+  sidebarBackdrop.classList.remove('show');
+}
+mobileMenuBtn?.addEventListener('click', openSidebar);
+sidebarCloseBtn?.addEventListener('click', closeSidebar);
+sidebarBackdrop?.addEventListener('click', closeSidebar);
 
 /* ---------- Auth state ---------- */
 watchAuthState(
   (user) => {
     loginScreen.hidden = true;
     appShell.hidden = false;
+
+    document.body.classList.remove('theme-admin', 'theme-staff');
+    document.body.classList.add(getThemeClass(user.role));
 
     userNameEl.textContent = user.name || user.username || user.email;
     userRoleEl.textContent = ROLES[user.role] || user.role;
@@ -109,7 +140,7 @@ function renderNav(){
   document.querySelectorAll('[data-screen]').forEach(btn => {
     btn.addEventListener('click', () => {
       switchScreen(btn.dataset.screen);
-      sidebar.classList.remove('open');
+      closeSidebar();
     });
   });
 }
@@ -117,7 +148,10 @@ function renderNav(){
 const screenTitles = {
   'dashboard': 'Dashboard',
   'master-data': 'Master Data Barang',
-  'transaksi': 'Transaksi Stok'
+  'transaksi': 'Transaksi Stok',
+  'laporan': 'Laporan',
+  'persetujuan': 'Persetujuan Revisi/Pembatalan',
+  'kelola-user': 'Kelola User'
 };
 
 const mountedScreens = new Set();
@@ -137,6 +171,9 @@ function switchScreen(key){
     if (key === 'dashboard') mountDashboard(panel);
     if (key === 'master-data') mountMasterData(panel);
     if (key === 'transaksi') mountTransaksi(panel);
+    if (key === 'laporan') mountReports(panel);
+    if (key === 'persetujuan') mountApprovals(panel);
+    if (key === 'kelola-user') mountUserAdmin(panel);
     mountedScreens.add(key);
   }
 }

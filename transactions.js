@@ -5,6 +5,9 @@ import {
 import { itemsCache, getAutocompleteSuggestions, adjustStock, UNIT_OPTIONS } from "./items.js";
 import { logActivity, showToast, escapeHtml, formatTimeID, formatDateID, startOfToday } from "./utils.js";
 import { currentUser, can } from "./auth.js";
+import {
+  startMyCorrectionsListener, onMyCorrectionsChange, getCorrectionStatusForTx, openCorrectionModal
+} from "./corrections.js";
 
 export let todayTransactions = [];
 let unsubscribeToday = null;
@@ -121,23 +124,52 @@ export function mountTransaksi(container){
       return;
     }
     list.innerHTML = todayTransactions.map(txItemHtml).join('');
+    list.querySelectorAll('[data-correct]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tx = todayTransactions.find(t => t.id === btn.dataset.correct);
+        if (tx) openCorrectionModal(tx);
+      });
+    });
   }
 
   renderTabUI();
   renderTodayList();
+  startMyCorrectionsListener();
   onTodayTransactionsChange(renderTodayList);
+  onMyCorrectionsChange(renderTodayList);
 }
 
 function txItemHtml(t){
   const d = t.timestamp?.toDate ? t.timestamp.toDate() : new Date();
-  const label = t.type === 'masuk' ? `+${t.qty} ${t.unit}` : t.type === 'keluar' ? `-${t.qty} ${t.unit}` : `selisih ${t.selisih>0?'+':''}${t.selisih} ${t.unit}`;
+  const isIn = t.type === 'masuk';
+  const isOut = t.type === 'keluar';
+  const qtyLabel = isIn ? `+${t.qty} ${t.unit}` : isOut ? `-${t.qty} ${t.unit}` : `${t.selisih>0?'+':''}${t.selisih} ${t.unit}`;
+  const qtyClass = isIn ? 'in' : isOut ? 'out' : 'adj';
+
+  const myStatus = getCorrectionStatusForTx(t.id);
+  const isOwner = t.userId === currentUser.uid;
+  const alreadyFlagged = t.status === 'dibatalkan' || t.status === 'direvisi';
+  let statusPill = '';
+  if (t.status === 'dibatalkan') statusPill = `<span class="tx-status-pill cancelled">Dibatalkan</span>`;
+  else if (t.status === 'direvisi') statusPill = `<span class="tx-status-pill approved">Direvisi</span>`;
+  else if (myStatus === 'pending') statusPill = `<span class="tx-status-pill pending">Menunggu Admin</span>`;
+  else if (myStatus === 'rejected') statusPill = `<span class="tx-status-pill rejected">Ditolak</span>`;
+
+  const canRequest = can('transaction.request_correction') && isOwner && !alreadyFlagged && myStatus !== 'pending';
+
   return `
     <li>
-      <span class="activity-dot ${t.type}"></span>
-      <span>
-        <strong>${escapeHtml(t.itemName)}</strong> — ${label}
-        <br><span class="activity-meta">${formatTimeID(d)} • ${escapeHtml(t.userName)}</span>
-      </span>
+      <div class="tx-row">
+        <div class="tx-row-left">
+          <span class="activity-dot ${t.type}"></span>
+          <span>
+            <span class="tx-row-name">${escapeHtml(t.itemName)}</span> ${statusPill}
+            <br><span class="activity-meta">${formatTimeID(d)} • ${escapeHtml(t.userName)}</span>
+          </span>
+        </div>
+        <span class="tx-row-qty ${qtyClass}">${qtyLabel}</span>
+      </div>
+      ${canRequest ? `<div class="tx-row-actions" style="margin:4px 0 0 18px"><button data-correct="${t.id}">Ajukan Revisi/Batal</button></div>` : ''}
     </li>
   `;
 }
