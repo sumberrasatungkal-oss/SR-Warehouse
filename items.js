@@ -1,7 +1,7 @@
 import { db } from "./firebase-init.js";
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc,
-  serverTimestamp, query, orderBy
+  serverTimestamp, query, orderBy, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getInitialLetter, normalize, logActivity, showToast, escapeHtml, applyTitleCaseOnBlur } from "./utils.js";
 import { can, currentUser } from "./auth.js";
@@ -85,11 +85,16 @@ export async function deleteItemById(itemId, itemName){
 }
 
 export async function adjustStock(itemId, value, mode = 'delta'){
+  const ref = doc(db, 'items', itemId);
+  if (mode === 'set'){
+    await updateDoc(ref, { currentStock: value, updatedAt: serverTimestamp() });
+    return value;
+  }
+  // Atomic server-side increment — safe even if multiple transactions
+  // happen back-to-back before the local cache has caught up.
+  await updateDoc(ref, { currentStock: increment(value), updatedAt: serverTimestamp() });
   const item = itemsCache.find(i => i.id === itemId);
-  if (!item) throw new Error('Barang tidak ditemukan');
-  const newStock = mode === 'set' ? value : item.currentStock + value;
-  await updateDoc(doc(db, 'items', itemId), { currentStock: newStock, updatedAt: serverTimestamp() });
-  return newStock;
+  return item ? item.currentStock + value : null;
 }
 
 /* ===================== UI ===================== */

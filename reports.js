@@ -228,7 +228,7 @@ async function runReport(container, exportExcel){
 function renderReportOutput(outputEl, { title, meta, headers, rows, totalsLabel }){
   outputEl.innerHTML = `
     <div class="report-output">
-      <h4>${escapeHtml(title)}</h4>
+      <div class="report-brand"><img src="logo.jpg" alt="Sumber Rasa"><div><h4>${escapeHtml(title)}</h4></div></div>
       <div class="report-meta">${escapeHtml(meta)} • Dicetak oleh ${escapeHtml(currentUser.name)} pada ${formatDateTimeID(new Date())}</div>
       <table class="report-table">
         <thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
@@ -287,7 +287,7 @@ function openMyActivityModal(rows){
         </div>
         <div class="modal-body">
           <div class="report-output" style="margin:0">
-            <h4>${escapeHtml(currentUser.name)}</h4>
+            <div class="report-brand"><img src="logo.jpg" alt="Sumber Rasa"><div><h4>${escapeHtml(currentUser.name)}</h4></div></div>
             <div class="report-meta">${rows.length} transaksi belum pernah digenerate • ${formatDateTimeID(new Date())}</div>
             <table class="report-table">
               <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>

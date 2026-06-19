@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="logo.jpg">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
@@ -16,7 +17,7 @@
   <div id="login-screen" class="screen login-screen">
     <div class="login-card">
       <div class="login-brand">
-        <span class="brand-mark">SR</span>
+        <img src="logo.jpg" alt="Sumber Rasa" class="login-logo">
         <h1>Sumber Rasa</h1>
         <p>Sistem Stok Gudang</p>
       </div>
@@ -43,10 +44,10 @@
     <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <span class="brand-mark">SR</span><span class="brand-text">Stok Gudang</span>
+        <img src="logo.jpg" alt="Sumber Rasa" class="brand-logo">
+        <span class="brand-text">Stok Gudang</span>
         <button class="btn-icon sidebar-close-mobile" id="sidebar-close-btn" aria-label="Tutup menu">✕</button>
       </div>
-      <nav id="sidebar-nav" class="sidebar-nav"></nav>
       <div class="sidebar-user">
         <div class="user-avatar" id="user-avatar">?</div>
         <div class="user-info">
@@ -55,6 +56,7 @@
         </div>
         <button id="logout-btn" class="btn-icon" title="Keluar" aria-label="Keluar">⏻</button>
       </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
     </aside>
 
     <main class="main-content">

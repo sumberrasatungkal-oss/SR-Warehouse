@@ -21,12 +21,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    function isStockOnlyChange() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentStock', 'updatedAt']);
+    }
+
     // Master data barang. Semua user login boleh baca.
-    // Tambah: Admin, Supervisor, & Staff. Edit: Admin & Supervisor. Hapus: Admin saja.
+    // Tambah: Admin, Supervisor, & Staff. Edit detail: Admin & Supervisor.
+    // Staff boleh mengubah stok SAJA, sebagai efek dari transaksi (masuk/keluar/opname).
+    // Hapus: Admin saja.
     match /items/{itemId} {
       allow read: if isSignedIn();
       allow create: if canEditItems() || isStaff();
-      allow update: if canEditItems();
+      allow update: if canEditItems() || (canTransact() && isStockOnlyChange());
       allow delete: if isAdmin();
     }
 
