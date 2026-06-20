@@ -156,13 +156,12 @@ async function runReport(container, exportExcel){
   try{
     if (state.reportType === 'stok_menipis'){
       const rows = itemsCache.filter(i => i.currentStock <= (i.minStock||0)).sort((a,b)=>a.currentStock-b.currentStock);
-      const headers = ['Nama Barang','Kategori','Stok Saat Ini','Stok Minimum','Satuan'];
-      const data = rows.map(i => [i.name, i.category||'-', i.currentStock, i.minStock||0, i.unit||'']);
-      if (exportExcel) return downloadExcel(`stok-menipis-${isoDateInput(new Date())}.xlsx`, headers, data);
-      return renderReportOutput(outputEl, {
-        title: 'Laporan Stok Menipis', meta: `Per ${formatDateTimeID(new Date())}`,
-        headers, rows: data, totalsLabel: `${rows.length} barang`
-      });
+      if (exportExcel){
+        const headers = ['Nama Barang','Kategori','Stok Saat Ini','Stok Minimum','Satuan'];
+        const data = rows.map(i => [i.name, i.category||'-', i.currentStock, i.minStock||0, i.unit||'']);
+        return downloadExcel(`stok-menipis-${isoDateInput(new Date())}.xlsx`, headers, data);
+      }
+      return renderStokMenipisReport(outputEl, { rows });
     }
 
     const { start, end } = getRange();
@@ -171,31 +170,37 @@ async function runReport(container, exportExcel){
 
     if (state.reportType === 'masuk_keluar'){
       const rows = all.filter(t => t.type === 'masuk' || t.type === 'keluar');
-      const headers = ['Tanggal','Jam','Barang','Jenis','Jumlah','Satuan','User'];
-      const data = rows.map(t => {
-        const d = t.timestamp.toDate();
-        return [formatDateID(d), formatTimeID(d), t.itemName, t.type === 'masuk' ? 'Masuk' : 'Keluar', t.qty, t.unit, t.userName];
-      });
       const totalMasuk = rows.filter(t=>t.type==='masuk').reduce((s,t)=>s+t.qty,0);
       const totalKeluar = rows.filter(t=>t.type==='keluar').reduce((s,t)=>s+t.qty,0);
-      if (exportExcel) return downloadExcel(`keluar-masuk-${isoDateInput(start)}_${isoDateInput(end)}.xlsx`, headers, data);
-      return renderReportOutput(outputEl, {
-        title: 'Laporan Keluar Masuk Barang', meta: `Periode: ${periodText}`,
-        headers, rows: data, totalsLabel: `Total Masuk: ${totalMasuk} • Total Keluar: ${totalKeluar}`
+      if (exportExcel){
+        const headers = ['Tanggal','Jam','Barang','Jenis','Jumlah','Satuan','User'];
+        const data = rows.map(t => {
+          const d = t.timestamp.toDate();
+          return [formatDateID(d), formatTimeID(d), t.itemName, t.type === 'masuk' ? 'Masuk' : 'Keluar', t.qty, t.unit, t.userName];
+        });
+        return downloadExcel(`keluar-masuk-${isoDateInput(start)}_${isoDateInput(end)}.xlsx`, headers, data);
+      }
+      return renderTransactionReport(outputEl, {
+        title: 'Keluar Masuk Barang', meta: `Periode: ${periodText}`, rows,
+        totalsLabel: `Total Masuk <span class="tx-row-qty in">+${totalMasuk}</span> &nbsp;•&nbsp; Total Keluar <span class="tx-row-qty out">-${totalKeluar}</span>`,
+        emptyMsg: 'Tidak ada transaksi masuk/keluar pada periode ini.'
       });
     }
 
     if (state.reportType === 'opname'){
       const rows = all.filter(t => t.type === 'opname');
-      const headers = ['Tanggal','Jam','Barang','Stok Sistem','Stok Fisik','Selisih','Satuan','User'];
-      const data = rows.map(t => {
-        const d = t.timestamp.toDate();
-        return [formatDateID(d), formatTimeID(d), t.itemName, t.stokSistem, t.stokFisik, t.selisih, t.unit, t.userName];
-      });
-      if (exportExcel) return downloadExcel(`stock-opname-${isoDateInput(start)}_${isoDateInput(end)}.xlsx`, headers, data);
-      return renderReportOutput(outputEl, {
-        title: 'Laporan Stock Opname', meta: `Periode: ${periodText}`,
-        headers, rows: data, totalsLabel: `${rows.length} kali opname`
+      if (exportExcel){
+        const headers = ['Tanggal','Jam','Barang','Stok Sistem','Stok Fisik','Selisih','Satuan','User'];
+        const data = rows.map(t => {
+          const d = t.timestamp.toDate();
+          return [formatDateID(d), formatTimeID(d), t.itemName, t.stokSistem, t.stokFisik, t.selisih, t.unit, t.userName];
+        });
+        return downloadExcel(`stock-opname-${isoDateInput(start)}_${isoDateInput(end)}.xlsx`, headers, data);
+      }
+      return renderTransactionReport(outputEl, {
+        title: 'Stock Opname', meta: `Periode: ${periodText}`, rows,
+        totalsLabel: `${rows.length} kali opname`,
+        emptyMsg: 'Tidak ada stock opname pada periode ini.'
       });
     }
 
@@ -206,17 +211,20 @@ async function runReport(container, exportExcel){
       }
       const rows = all.filter(t => t.itemId === state.selectedItemId);
       const itemName = itemsCache.find(i => i.id === state.selectedItemId)?.name || '';
-      const headers = ['Tanggal','Jam','Jenis','Jumlah/Selisih','Satuan','User'];
-      const data = rows.map(t => {
-        const d = t.timestamp.toDate();
-        const jenis = t.type === 'masuk' ? 'Masuk' : t.type === 'keluar' ? 'Keluar' : 'Opname';
-        const jumlah = t.type === 'opname' ? t.selisih : t.qty;
-        return [formatDateID(d), formatTimeID(d), jenis, jumlah, t.unit, t.userName];
-      });
-      if (exportExcel) return downloadExcel(`detail-${itemName}-${isoDateInput(start)}_${isoDateInput(end)}.xlsx`, headers, data);
-      return renderReportOutput(outputEl, {
-        title: `Laporan Detail: ${itemName}`, meta: `Periode: ${periodText}`,
-        headers, rows: data, totalsLabel: `${rows.length} transaksi`
+      if (exportExcel){
+        const headers = ['Tanggal','Jam','Jenis','Jumlah/Selisih','Satuan','User'];
+        const data = rows.map(t => {
+          const d = t.timestamp.toDate();
+          const jenis = t.type === 'masuk' ? 'Masuk' : t.type === 'keluar' ? 'Keluar' : 'Opname';
+          const jumlah = t.type === 'opname' ? t.selisih : t.qty;
+          return [formatDateID(d), formatTimeID(d), jenis, jumlah, t.unit, t.userName];
+        });
+        return downloadExcel(`detail-${itemName}-${isoDateInput(start)}_${isoDateInput(end)}.xlsx`, headers, data);
+      }
+      return renderTransactionReport(outputEl, {
+        title: `Detail: ${itemName}`, meta: `Periode: ${periodText}`, rows,
+        totalsLabel: `${rows.length} transaksi`,
+        emptyMsg: 'Tidak ada transaksi untuk barang ini pada periode ini.'
       });
     }
   }catch(e){
@@ -225,19 +233,61 @@ async function runReport(container, exportExcel){
   }
 }
 
-function renderReportOutput(outputEl, { title, meta, headers, rows, totalsLabel }){
+function txReportRowHtml(t){
+  const d = t.timestamp.toDate();
+  let qtyHtml, sub;
+  if (t.type === 'masuk'){
+    qtyHtml = `<span class="tx-row-qty in">+${t.qty} ${escapeHtml(t.unit)}</span>`;
+    sub = `${formatDateID(d)} • ${formatTimeID(d)} • ${escapeHtml(t.userName)}`;
+  } else if (t.type === 'keluar'){
+    qtyHtml = `<span class="tx-row-qty out">-${t.qty} ${escapeHtml(t.unit)}</span>`;
+    sub = `${formatDateID(d)} • ${formatTimeID(d)} • ${escapeHtml(t.userName)}`;
+  } else {
+    qtyHtml = `<span class="tx-row-qty adj">${t.selisih>0?'+':''}${t.selisih} ${escapeHtml(t.unit)}</span>`;
+    sub = `Sistem ${t.stokSistem} → Fisik ${t.stokFisik} • ${formatDateID(d)} ${formatTimeID(d)} • ${escapeHtml(t.userName)}`;
+  }
+  return `
+    <li class="report-row ${t.type}">
+      <div class="tx-row">
+        <div class="tx-row-left">
+          <span class="activity-dot ${t.type}"></span>
+          <span><span class="tx-row-name">${escapeHtml(t.itemName)}</span><br><span class="activity-meta">${sub}</span></span>
+        </div>
+        ${qtyHtml}
+      </div>
+    </li>
+  `;
+}
+
+function renderTransactionReport(outputEl, { title, meta, rows, totalsLabel, emptyMsg }){
   outputEl.innerHTML = `
-    <div class="report-output">
-      <div class="report-brand"><img src="logo.jpg" alt="Sumber Rasa"><div><h4>${escapeHtml(title)}</h4></div></div>
-      <div class="report-meta">${escapeHtml(meta)} • Dicetak oleh ${escapeHtml(currentUser.name)} pada ${formatDateTimeID(new Date())}</div>
-      <table class="report-table">
-        <thead><tr>${headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
-        <tbody>
-          ${rows.length ? rows.map(r => `<tr>${r.map(c=>`<td>${escapeHtml(String(c))}</td>`).join('')}</tr>`).join('')
-            : `<tr><td colspan="${headers.length}" style="text-align:center;color:var(--muted)">Tidak ada data pada periode ini.</td></tr>`}
-        </tbody>
-        ${totalsLabel ? `<tfoot><tr><td colspan="${headers.length}">${escapeHtml(totalsLabel)}</td></tr></tfoot>` : ''}
-      </table>
+    <div class="report-output report-output-compact">
+      <div class="report-brand"><img src="logo.jpg" alt="Sumber Rasa" width="32" height="32"><div><h4>${escapeHtml(title)}</h4></div></div>
+      <div class="report-meta">${escapeHtml(meta)} • ${formatDateTimeID(new Date())}</div>
+      ${totalsLabel ? `<div class="report-totals">${totalsLabel}</div>` : ''}
+      <ul class="report-row-list">
+        ${rows.length ? rows.map(txReportRowHtml).join('') : `<li class="empty-state" style="padding:14px 0">${emptyMsg}</li>`}
+      </ul>
+    </div>
+  `;
+}
+
+function renderStokMenipisReport(outputEl, { rows }){
+  outputEl.innerHTML = `
+    <div class="report-output report-output-compact">
+      <div class="report-brand"><img src="logo.jpg" alt="Sumber Rasa" width="32" height="32"><div><h4>Laporan Stok Menipis</h4></div></div>
+      <div class="report-meta">Per ${formatDateTimeID(new Date())}</div>
+      <div class="report-totals">${rows.length} barang di bawah/sama dengan stok minimum</div>
+      <ul class="low-stock-list">
+        ${rows.length ? rows.map(i => `
+          <li>
+            <span>${escapeHtml(i.name)}</span>
+            <span>
+              <span class="qty-main">${i.currentStock}</span><span class="qty-unit">${escapeHtml(i.unit||'')}</span>
+              <span class="qty-min">min ${i.minStock||0} ${escapeHtml(i.unit||'')}</span>
+            </span>
+          </li>`).join('') : `<li style="background:none;justify-content:center;color:var(--muted)">Semua stok aman 👍</li>`}
+      </ul>
     </div>
   `;
 }
@@ -270,32 +320,21 @@ export async function generateMyActivityReport(){
 
 function openMyActivityModal(rows){
   const root = document.getElementById('modal-root');
-  const headers = ['Tanggal','Jam','Barang','Jenis','Jumlah/Selisih','Satuan'];
-  const data = rows.map(t => {
-    const d = t.timestamp.toDate();
-    const jenis = t.type === 'masuk' ? 'Masuk' : t.type === 'keluar' ? 'Keluar' : 'Opname';
-    const jumlah = t.type === 'opname' ? t.selisih : t.qty;
-    return [formatDateID(d), formatTimeID(d), t.itemName, jenis, jumlah, t.unit];
-  });
 
   root.innerHTML = `
     <div class="modal-overlay" id="myreport-overlay">
-      <div class="modal-box" style="max-width:640px">
+      <div class="modal-box" style="max-width:420px">
         <div class="modal-header">
           <h3>Laporan Aktivitas Saya</h3>
           <button class="btn-icon" id="myreport-close">✕</button>
         </div>
         <div class="modal-body">
-          <div class="report-output" style="margin:0">
-            <div class="report-brand"><img src="logo.jpg" alt="Sumber Rasa"><div><h4>${escapeHtml(currentUser.name)}</h4></div></div>
+          <div class="report-output report-output-compact" style="margin:0; padding:0;">
+            <div class="report-brand"><img src="logo.jpg" alt="Sumber Rasa" width="32" height="32"><div><h4>${escapeHtml(currentUser.name)}</h4></div></div>
             <div class="report-meta">${rows.length} transaksi belum pernah digenerate • ${formatDateTimeID(new Date())}</div>
-            <table class="report-table">
-              <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
-              <tbody>
-                ${data.length ? data.map(r=>`<tr>${r.map(c=>`<td>${escapeHtml(String(c))}</td>`).join('')}</tr>`).join('')
-                  : `<tr><td colspan="6" style="text-align:center;color:var(--muted)">Tidak ada aktivitas baru.</td></tr>`}
-              </tbody>
-            </table>
+            <ul class="report-row-list">
+              ${rows.length ? rows.map(txReportRowHtml).join('') : `<li class="empty-state" style="padding:14px 0">Tidak ada aktivitas baru.</li>`}
+            </ul>
           </div>
         </div>
         <div class="modal-footer">

@@ -1,7 +1,7 @@
 import { itemsCache, onItemsChange } from "./items.js";
 import { todayTransactions, onTodayTransactionsChange } from "./transactions.js";
 import { escapeHtml, formatTimeID } from "./utils.js";
-import { currentUser } from "./auth.js";
+import { currentUser, can } from "./auth.js";
 import { generateMyActivityReport } from "./reports.js";
 
 const PREVIEW_COUNT = 5;
@@ -15,10 +15,6 @@ export function computeDashboardStats(){
     .filter(i => i.currentStock <= (i.minStock || 0))
     .sort((a,b) => a.currentStock - b.currentStock);
 
-  const aktivitasSource = currentUser.role === 'staff'
-    ? todayTransactions.filter(t => t.userId === currentUser.uid)
-    : todayTransactions;
-
   return {
     totalJenisBarang,
     totalStok,
@@ -27,7 +23,7 @@ export function computeDashboardStats(){
     keluarCount: keluar.length,
     keluarQty: keluar.reduce((s,t) => s + (t.qty||0), 0),
     stokMenipis,
-    aktivitas: aktivitasSource
+    aktivitas: todayTransactions
   };
 }
 
@@ -60,8 +56,8 @@ export function mountDashboard(container){
       <div class="panel-row">
         <div class="card">
           <div class="card-header">
-            <h3>${currentUser.role === 'staff' ? 'Aktivitas Saya Hari Ini' : 'Ringkasan Aktivitas Hari Ini'}</h3>
-            ${currentUser.role === 'staff' ? `<button class="btn btn-ghost btn-sm" id="db-gen-report">Generate Laporan Saya</button>` : ''}
+            <h3>Ringkasan Aktivitas Hari Ini</h3>
+            ${can('transaction.create') ? `<button class="btn btn-ghost btn-sm" id="db-gen-report">Generate Laporan Saya</button>` : ''}
           </div>
           <div class="card-body">
             ${expandableList(s.aktivitas, activityRowHtml, 'Belum ada aktivitas.', 'db-activity')}

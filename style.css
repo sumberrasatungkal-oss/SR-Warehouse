@@ -402,6 +402,18 @@ body.theme-staff{
 .report-table td{padding:8px 10px; border-bottom:1px solid var(--border);}
 .report-table tfoot td{font-weight:700; border-top:2px solid var(--border); border-bottom:none;}
 
+.report-output-compact{padding:14px;}
+.report-totals{
+  font-size:13px; font-weight:600; background:var(--surface-2); padding:8px 12px;
+  border-radius:var(--radius-sm); margin-bottom:10px;
+}
+.report-row-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px;}
+.report-row{padding:6px 8px; border-radius:var(--radius-sm);}
+.report-row.opname{background:#E8F1FB; border:1px solid #BFD9F2;}
+.report-row.opname .tx-row-qty{color:#2563EB;}
+.report-row .tx-row-name{font-size:13px;}
+.report-row .activity-meta{font-size:11px;}
+
 /* User admin */
 .user-row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); gap:10px;}
 .user-row:last-child{border-bottom:none;}
